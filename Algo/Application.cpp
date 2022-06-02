@@ -5,14 +5,20 @@
 #include <functional>
 #include <ostream>
 
+//#define FIB_DEMO
+
 #define STACK_TRESHOLD 256
 #define FLAG
 #define ONLYSQUARE
 
 template<typename T> class Matrix;
+template<typename T> class Vector;
 
 template<typename T>
 std::ostream& operator<<(std::ostream& os, const Matrix<T>& m);
+
+template<typename T>
+std::ostream& operator<<(std::ostream& os, const Vector<T>& v);
 
 template <typename T>
 class Matrix {
@@ -167,8 +173,6 @@ public:
 		
 	}
 
-	
-
 	Matrix& operator=(Matrix<T>&& other) noexcept {
 		if (this != &other) {
 			n = other.n;
@@ -186,6 +190,33 @@ public:
 		}
 
 		return *this;
+	}
+
+	Vector<T> operator*(const Vector<T>& vec) {
+		if (vec.n != m) {
+			return vec;
+		}
+		T ent[STACK_TRESHOLD];
+		memset(ent, 0, vec.n * sizeof(T));
+
+		Vector<T> res(ent, vec.n);
+		
+
+		for (size_t i = 0; i < vec.n; ++i) {
+			T partres = 0;
+			for (size_t j = 0; j < m; ++j) {
+				if (is_heap) {
+					partres += vec.stack_data[j] * heap_data[i * m + j];
+				}
+				else {
+					partres += vec.stack_data[j] * stack_data[i * m + j];
+				}
+				res.stack_data[i] = partres;
+			}
+		}
+
+		return res;
+
 	}
 
 	~Matrix() {
@@ -226,6 +257,17 @@ std::ostream& operator<<(std::ostream& os, const Matrix<T>& m) {
 }
 
 template<typename T>
+std::ostream& operator<<(std::ostream& os, const Vector<T>& v) {
+	os << v.n << "x" << "1" << " Vector" << "\n";
+	for (size_t i = 0; i < v.n; ++i) {
+		os << v.stack_data[i];
+		os << "\n";
+	}
+
+	return os;
+}
+
+template<typename T>
 constexpr Matrix<T> operator*(Matrix<T>& a, const Matrix<T>& b) {
 	return a *= b;
 }
@@ -240,10 +282,126 @@ constexpr Matrix<T> operator-(Matrix<T>& a, const Matrix<T>& b) {
 	return a -= b;
 }
 
+template<typename T>
+class Vector {
+	friend class Matrix<T>;
+private:
+	T stack_data[STACK_TRESHOLD];
+	uint32_t n;
+
+public:
+	Vector(T* entries, uint32_t _n) : n(_n) {
+		memcpy(stack_data, entries, n * sizeof(T));
+	}
+	~Vector() {
+		memset(stack_data, 0, sizeof(T) * n);
+	}
+
+	Vector(const Vector& other) : n(other.n) {
+		memcpy(stack_data, other.stack_data, n*sizeof(T));
+	}
+
+	Vector(Vector&& other) noexcept : n(other.n) {
+		memcpy(stack_data, other.stack_data, n * sizeof(T));
+		//other.stack_data = nullptr;
+	}
+
+	Vector& operator=(const Vector<T>& other) {
+		if (this != &other) {
+			n = other.n;
+			memcpy(stack_data, other.stack_data, n * sizeof(T));
+		}
+
+		return *this;
+	}
+
+	Vector& operator=(Vector<T>&& other) noexcept {
+		if (this != &other) {
+			memcpy(stack_data, other.stack_data, n * sizeof(T));
+			memset(other.stack_data, 0, n * sizeof(T));
+		}
+
+		return *this;
+	}
+
+	constexpr Vector& operator+=(const Vector& other) {
+		if (n != other.n) {
+			return *this;
+		}
+		for (size_t i = 0; i < n; ++i) {
+			stack_data[i] += other.stack_data[i];
+		}
+
+		return *this;
+	}
+	constexpr Vector& operator-=(const Vector& other) {
+		if (n != other.n) {
+			return *this;
+		}
+		for (size_t i = 0; i < n; ++i) {
+			stack_data[i] -= other.stack_data[i];
+		}
+
+		return *this;
+	}
+	constexpr Vector& operator*=(const Vector& other) {
+		if (n != other.n) {
+			return *this;
+		}
+		for (size_t i = 0; i < n; ++i) {
+			stack_data[i] *= other.stack_data[i];
+		}
+
+		return *this;
+	}
+	constexpr Vector& operator/=(const Vector& other) {
+		if (n != other.n) {
+			return *this;
+		}
+		for (size_t i = 0; i < n; ++i) {
+			if (other.stack_data[i] == 0) {
+				return *this;
+			}
+			stack_data[i] /= other.stack_data[i];
+		}
+
+		return *this;
+	}
+
+	T inner_prod(const Vector<T>& a, const Vector<T>& b) {
+		if (a.n != b.n) {
+			return 0;
+		}
+		T res = 0;
+		for (size_t i = 0; i < a.n; ++i) {
+			res += a[i] * b[i];
+		}
+	}
+
+	friend std::ostream& operator<<<T>(std::ostream& os, const Vector<T>& v);
+};
+
+template<typename T>
+constexpr Vector<T> operator*(Vector<T>& a, const Vector<T>& b) {
+	return a *= b;
+}
+template<typename T>
+constexpr Vector<T> operator+(Vector<T>& a, const Vector<T>& b) {
+	return a += b;
+}
+template<typename T>
+constexpr Vector<T> operator-(Vector<T>& a, const Vector<T>& b) {
+	return a -= b;
+}
+template<typename T>
+constexpr Vector<T> operator/(Vector<T>& a, const Vector<T>& b) {
+	return a /= b;
+}
 
 int main(void) {
-	
-	int nums[] = { 1, 2, 3, 4, 5, 6, 7, 8, 9};
+
+#ifdef DEMO
+	int nums[] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
 
 	Matrix<int> A(nums, 3, 3);
 
@@ -266,6 +424,34 @@ int main(void) {
 	M3 = A + M1;
 	M3 *= M1;
 
-	std::cout << M1 << M2 << M3;
+	//M2 = M3 * M1;
 
+	std::cout << M1 << M2 << M3;
+#endif
+
+#ifdef FIB_DEMO
+	// calculate fibonacci numbers
+	int nums[] = { 1, 1, 6, 1 };
+	Matrix<int> FIB(nums, 2, 2);
+
+	std::cout << FIB;
+
+	int nums2[] = { 1, 2 };
+	Vector<int> starting_state(nums2, 2);
+
+	std::cout << starting_state;
+
+	auto endstate = FIB * starting_state;
+	std::cout << endstate;
+
+	for (size_t i = 0; i < 50; ++i) {
+		auto next = FIB * starting_state;
+		starting_state = next;
+		std::cout << starting_state;
+		
+	}
+
+	std::cout << "50. fibonacci number: " << starting_state;
+
+#endif
 }
