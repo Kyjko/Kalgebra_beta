@@ -146,8 +146,8 @@ std::array<QMatrix<T>, 2> QMatrix<T>::DecomposeLU(const QMatrix<T>& a) const {
     auto n = a.GetN();
 
     T* _tmp_nums = nullptr;
-    ALLOC_TRY(_tmp_nums = new T[SAFE_UINT(n)]);
-    memset(_tmp_nums, 0, SAFE_UINT(sizeof(T) * SAFE_UINT(n)));
+    ALLOC_TRY(_tmp_nums = new T[SAFE_UINT(n*n)]);
+    memset(_tmp_nums, 0, SAFE_UINT(sizeof(T) * SAFE_UINT(n*n)));
 
     QMatrix<T> l(_tmp_nums, n, n);
     QMatrix<T> u(_tmp_nums, n, n);
@@ -219,7 +219,32 @@ QMatrix<T> operator-(const QMatrix<T>& left, const QMatrix<T>& right) {
 
 template<typename T>
 QMatrix<T> operator*(const QMatrix<T>& left, const QMatrix<T>& right) {
+    if (a.GetN() != b.GetN() || a.GetM() != b.GetM()) {
+        merror("Cannot multiply two matrices with invalid dimensions!", E_MAT_INVALID_DIMENSION);
+        return left;
+    }
 
+    T n = left.GetN();
+    T m = right.GetM();
+
+    T* _tmp_nums = nullptr;
+    ALLOC_TRY(_tmp_nums = new T[SAFE_UINT(n*m)]);
+    memset(_tmp_nums, 0, SAFE_UINT(sizeof(T) * SAFE_UINT(n*m)));
+    
+    QMatrix<T> res(_tmp_nums, n, m);
+    _tmp_nums = nullptr;
+
+    for (size_t i = 0; i < n; ++i) {
+        for (size_t j = 0; j < m; ++j) {
+            T part_sum = 0;
+            for (size_t k = 0; k < left.GetM(); ++i) {
+                DEREF_TRY(part_sum += left[i][k] * right[k][j]);
+            }
+            res.data[SAFE_UINT(i * m + j)] = part_sum;
+        }
+    }
+
+    return res;
 }
 
 template<typename T>
@@ -256,4 +281,9 @@ QMatrix<T> operator*(const QMatrix<T>& a, T scalar) {
     }
 
     return res;
+}
+
+template<typename T>
+QMatrix<T> I(uint64_t n, uint64_t m) {
+    // create unit matrix
 }
