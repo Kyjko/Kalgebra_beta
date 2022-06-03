@@ -1,8 +1,6 @@
 #include "Matrix.hpp"
 #include <iostream>
 
-#define FIB_DEMO
-
 int main(void) {
 
 #ifdef DEMO

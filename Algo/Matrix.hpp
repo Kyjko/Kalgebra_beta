@@ -27,7 +27,7 @@ template <typename T>
 class Matrix {
 private:
 	// dimensions
-	uint32_t n, m;
+	uint64_t n, m;
 	T stack_data[STACK_TRESHOLD];
 	T* heap_data;
 	FLAG bool is_heap;

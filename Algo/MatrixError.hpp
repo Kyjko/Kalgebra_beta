@@ -4,11 +4,8 @@
 #include <iostream>
 #include <cstdlib>
 
-#define E_MAT_INVALID_DIMENSION 1
-#define E_VEC_INVALID_DIMENSION 2
-#define E_MAT_ALLOC 3
-#define E_VEC_ALLOC 4
-#define E_DEREF 99
+#define E_MAT_INVALID_DIMENSION 91
+#define E_VEC_INVALID_DIMENSION 92
 
 #define INFO 0
 #define WARN 1
@@ -23,6 +20,10 @@
 		case WARN: fprintf(stderr, "[!] %s\n", X); \
 		case SEVERE: fprintf(stderr, "[!!] %s\n", X); \
 		case CRITICAL: fprintf(stderr, "[CRITICAL] %s\n", X); \
+		case E_MAT_INVALID_DIMENSION: fprintf(stderr, "[MATRIX DIMENSION] %s\n", X); \
+		case E_VEC_INVALID_DIMENSION: fprintf(stderr, "[VECTOR DIMENSION] %s\n", X); \
+		case E_MAT_ALLOC: fprintf(stderr, "[MATRIX ALLOCATION] %s\n", X); \
+		case E_VEC_ALLOC: fprintf(stderr, "[VECTOR ALLOCATION] %s\n", X); \
 		default: fprintf(stderr, "[?] %s\n", X); \
 	}
 
