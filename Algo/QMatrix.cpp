@@ -152,6 +152,8 @@ std::array<QMatrix<T>, 2> QMatrix<T>::DecomposeLU(const QMatrix<T>& a) const {
     QMatrix<T> l(_tmp_nums, n, n);
     QMatrix<T> u(_tmp_nums, n, n);
 
+    _tmp_nums = nullptr;
+
     size_t i = 0, j = 0, k = 0;
     for (i = 0; i < n; i++) {
         for (j = 0; j < n; j++) {
@@ -191,7 +193,7 @@ QMatrix<T> operator+(const QMatrix<T>& left, const QMatrix<T>& right) {
     QMatrix<T> res = left;
     for (size_t i = 0; i < left.GetN(); ++i) {
         for (size_t j = 0; j < left.GetM(); ++j) {
-            DEREF_TRY(res.data[i * left.GetN() + j] = left[i][j] + right[i][j]);
+            DEREF_TRY(res.data[i * left.GetM() + j] = left[i][j] + right[i][j]);
         }
     }
 
@@ -208,7 +210,7 @@ QMatrix<T> operator-(const QMatrix<T>& left, const QMatrix<T>& right) {
     QMatrix<T> res = left;
     for (size_t i = 0; i < left.GetN(); ++i) {
         for (size_t j = 0; j < left.GetM(); ++j) {
-            DEREF_TRY(res.data[i * left.GetN() + j] = left[i][j] - right[i][j]);
+            DEREF_TRY(res.data[i * left.GetM() + j] = left[i][j] - right[i][j]);
         }
     }
 
@@ -225,7 +227,7 @@ QMatrix<T> operator+(const QMatrix<T>& a, T scalar) {
     QMatrix<T> res = a;
     for (size_t i = 0; i < a.GetN(); ++i) {
         for (size_t j = 0; j < a.GetM(); ++j) {
-            DEREF_TRY(res.data[i * left.GetN() + j] += scalar);
+            DEREF_TRY(res.data[i * a.GetM() + j] += scalar);
         }
     }
 
@@ -237,7 +239,7 @@ QMatrix<T> operator-(const QMatrix<T>& a, T scalar) {
     QMatrix<T> res = a;
     for (size_t i = 0; i < a.GetN(); ++i) {
         for (size_t j = 0; j < a.GetM(); ++j) {
-            DEREF_TRY(res.data[i * left.GetN() + j] -= scalar);
+            DEREF_TRY(res.data[i * a.GetM() + j] -= scalar);
         }
     }
 
@@ -249,7 +251,7 @@ QMatrix<T> operator*(const QMatrix<T>& a, T scalar) {
     QMatrix<T> res = a;
     for (size_t i = 0; i < a.GetN(); ++i) {
         for (size_t j = 0; j < a.GetM(); ++j) {
-            DEREF_TRY(res.data[i * left.GetN() + j] *= scalar);
+            DEREF_TRY(res.data[i * a.GetM() + j] *= scalar);
         }
     }
 
