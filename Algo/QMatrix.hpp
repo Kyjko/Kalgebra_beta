@@ -12,18 +12,7 @@ template<typename T> class QMatrix;
 #define SQUARE
 
 /*
-	This implementation allocates matrix data on the heap.
-	Supposedly, there won't be too many allocations anyways, 
-	therefore sacrificing the syscall-imposed time of mallocs
-	lets us treating data dynamically without needing to
-	specify predefined stack constraints on the data.
-
-	The algorithms used to calculate matrix arithmetic operations
-	such as matrix multiplication use the naive O(n^3) time complexity
-	algorithm. In theory, there exist faster ways of multiplying two
-	matrices, but the time difference will only be non-neglegible once we
-	have very large data to work with. This implementation does not take that
-	into consideration.
+	-------------
 
 	
 */
