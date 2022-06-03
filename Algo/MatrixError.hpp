@@ -16,14 +16,12 @@
 #define SAFE_INT(X) static_cast<int64_t>(X)
 
 #define merror(X, S) switch(S) { \
-		case INFO: fprintf(stderr, "[*] %s\n", X); \
-		case WARN: fprintf(stderr, "[!] %s\n", X); \
-		case SEVERE: fprintf(stderr, "[!!] %s\n", X); \
-		case CRITICAL: fprintf(stderr, "[CRITICAL] %s\n", X); \
-		case E_MAT_INVALID_DIMENSION: fprintf(stderr, "[MATRIX DIMENSION] %s\n", X); \
-		case E_VEC_INVALID_DIMENSION: fprintf(stderr, "[VECTOR DIMENSION] %s\n", X); \
-		case E_MAT_ALLOC: fprintf(stderr, "[MATRIX ALLOCATION] %s\n", X); \
-		case E_VEC_ALLOC: fprintf(stderr, "[VECTOR ALLOCATION] %s\n", X); \
+		case INFO: fprintf(stderr, "[*] %s\n", X); break; \
+		case WARN: fprintf(stderr, "[!] %s\n", X); break; \
+		case SEVERE: fprintf(stderr, "[!!] %s\n", X); break; \
+		case CRITICAL: fprintf(stderr, "[CRITICAL] %s\n", X); break; \
+		case E_MAT_INVALID_DIMENSION: fprintf(stderr, "[MATRIX DIMENSION] %s\n", X); break; \
+		case E_VEC_INVALID_DIMENSION: fprintf(stderr, "[VECTOR DIMENSION] %s\n", X); break; \
 		default: fprintf(stderr, "[?] %s\n", X); \
 	}
 

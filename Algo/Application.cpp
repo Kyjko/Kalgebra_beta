@@ -1,6 +1,12 @@
 #include "Matrix.hpp"
 #include <iostream>
 
+#define QMATRIX
+
+#ifdef QMATRIX
+#include "QMatrix.hpp"
+#endif
+
 int main(void) {
 
 #ifdef DEMO
@@ -55,6 +61,18 @@ int main(void) {
 	}
 
 	std::cout << "50. fibonacci number: " << starting_state;
+
+#endif
+
+#ifdef QMATRIX
+
+	int nums[] = { 1, 2, 3, 4 };
+	QMatrix<int> mat(nums, 2, 2);
+
+	std::cout << mat;
+
+	mat = mat * mat;
+	std::cout << mat;
 
 #endif
 }
