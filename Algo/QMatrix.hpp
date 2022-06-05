@@ -20,13 +20,11 @@ template<typename T> class QMatrix;
 template<typename U>
 struct _row {
 public:
-	_row(U* _a_, uint64_t k) {
+	_row(const U* _a_, uint64_t k) {
 		ALLOC_TRY(entries = new U[k]);
 		memcpy(entries, _a_, SAFE_UINT(SAFE_UINT(k) * sizeof(U)));
 	}
-	~_row() {
-		delete[] entries;
-	}
+	~_row() {}
 
 	U& operator[](size_t idx) {
 		DEREF_TRY(return entries[idx]);
@@ -54,9 +52,9 @@ public:
 	uint64_t Defect(const QMatrix<T>& a) const noexcept;
 	
 	bool IsLinearlyDep(const QMatrix<T>& a) const noexcept;
-	bool IsSquare(const QMatrix<T>& a) const noexcept;
+	bool IsSquare() const noexcept;
 
-	SQUARE std::array<QMatrix<T>, 2> DecomposeLU(const QMatrix<T>& a) const;
+	SQUARE std::array<QMatrix<T>, 2> DecomposeLU() const;
 	SQUARE std::array<QMatrix<T>, 3> DecomposeEigen(const QMatrix<T>& a) const;
 	SQUARE std::array<QMatrix<T>, 3> DecomposeSingularValue(const QMatrix<T>& a) const;
 	
@@ -66,8 +64,8 @@ public:
 	QMatrix<T>& operator=(QMatrix<T>&& other) noexcept;
 
 	template<typename T> friend std::ostream& operator<<(std::ostream& os, const QMatrix<T>& mat);
-    template<typename T> friend QMatrix<T> operator+(const QMatrix<T>& left, const QMatrix<T>& right);
-    template<typename T> friend QMatrix<T> operator-(const QMatrix<T>& left, const QMatrix<T>& right);
+    SQUARE template<typename T> friend QMatrix<T> operator+(const QMatrix<T>& left, const QMatrix<T>& right);
+    SQUARE template<typename T> friend QMatrix<T> operator-(const QMatrix<T>& left, const QMatrix<T>& right);
     template<typename T> friend QMatrix<T> operator*(const QMatrix<T>& left, const QMatrix<T>& right);
     template<typename T> friend QMatrix<T> operator+(const QMatrix<T>& a, T scalar);
     template<typename T> friend QMatrix<T> operator-(const QMatrix<T>& a, T scalar);
@@ -97,7 +95,7 @@ template<typename T>
 QMatrix<T>::QMatrix(const QMatrix<T>& other) {
     if (n != other.n || m != other.m) {
         delete[] data;
-        ALLOC_TRY(data = new T[SAFE_UINT(other.n) * SAFE_UINT(other.m)]);
+        ALLOC_TRY(data = new T[SAFE_UINT(other.GetN()) * SAFE_UINT(other.GetM())]);
     }
     n = other.n;
     m = other.m;
@@ -108,7 +106,7 @@ QMatrix<T>::QMatrix(const QMatrix<T>& other) {
 template<typename T>
 QMatrix<T>::QMatrix(QMatrix<T>&& other) noexcept {
     if (n != other.n || m != other.m) {
-        delete[] data;
+        //delete[] data;
         ALLOC_TRY(data = new T[SAFE_UINT(other.n) * SAFE_UINT(other.m)]);
     }
     n = other.n;
@@ -148,6 +146,11 @@ QMatrix<T>& QMatrix<T>::operator=(QMatrix<T>&& other) noexcept {
 }
 
 template<typename T>
+bool QMatrix<T>::IsSquare() const noexcept {
+    return n == m;
+}
+
+template<typename T>
 uint64_t QMatrix<T>::GetN() const noexcept {
     return SAFE_UINT(n);
 }
@@ -169,7 +172,8 @@ _row<T>& QMatrix<T>::operator[](uint64_t i) const {
     T* _tmp_dat = nullptr;
     ALLOC_TRY(_tmp_dat = new T[m]);
     memcpy(_tmp_dat, static_cast<T*>(data + SAFE_UINT(i * m)), SAFE_UINT(SAFE_UINT(m)*sizeof(T)));
-    _row<T> r = _row(_tmp_dat, m);
+  
+    _row<T> r(_tmp_dat, m);
     _tmp_dat = nullptr;
     return r;
 }
@@ -179,10 +183,14 @@ bool operator==(const QMatrix<TT>& a, const QMatrix<TT>& b) {
     if (a.GetN() != b.GetN() || a.GetM() != b.GetM()) {
         return false;
     }
+
+    uint64_t n = a.GetN();
+    uint64_t m = a.GetM();
+
     bool _flag = true;
-    for (size_t i = 0; i < a.GetN(); ++i) {
-        for (size_t j = 0; j < a.GetM(); ++j) {
-            if (a.GetItem(i, j) != b.GetItem(i, j)) {
+    for (size_t i = 0; i < n; ++i) {
+        for (size_t j = 0; j < m; ++j) {
+            if (a[i][j] != b[i][j]) {
                 _flag = false;
             }
         }
@@ -223,7 +231,9 @@ double QMatrix<T>::Det(const QMatrix<T>& a) const noexcept {
 
 template<typename T>
 SQUARE
-std::array<QMatrix<T>, 2> QMatrix<T>::DecomposeLU(const QMatrix<T>& a) const {
+std::array<QMatrix<T>, 2> QMatrix<T>::DecomposeLU() const {
+    
+    auto a = *this;
     if (!a.IsSquare()) {
         merror("Cannot apply LU-decomposition to non-square matrix!", E_MAT_INVALID_DIMENSION);
     }
@@ -245,7 +255,7 @@ std::array<QMatrix<T>, 2> QMatrix<T>::DecomposeLU(const QMatrix<T>& a) const {
             if (j < i)
                 l.data[j * n + i] = 0;
             else {
-                l.data[j][i] = a[j][i];
+                l.data[j * n + i] = a[j][i];
                 for (k = 0; k < i; k++) {
                     l.data[j * n + i] = l[j][i] - l[j][k] * u[k][i];
                 }
@@ -269,16 +279,20 @@ std::array<QMatrix<T>, 2> QMatrix<T>::DecomposeLU(const QMatrix<T>& a) const {
 }
 
 template<typename T>
+SQUARE
 QMatrix<T> operator+(const QMatrix<T>& left, const QMatrix<T>& right) {
     if (left.GetN() != right.GetN() || left.GetM() != right.GetM()) {
         merror("Cannot add two matrices with different dimensions!", E_MAT_INVALID_DIMENSION);
         return left;
     }
 
+    uint64_t n = left.GetN();
+    uint64_t m = left.GetM();
+
     QMatrix<T> res = left;
-    for (size_t i = 0; i < left.GetN(); ++i) {
-        for (size_t j = 0; j < left.GetM(); ++j) {
-            DEREF_TRY(res.data[i * left.GetM() + j] = left[i][j] + right[i][j]);
+    for (size_t i = 0; i < n; ++i) {
+        for (size_t j = 0; j < m; ++j) {
+            DEREF_TRY(res.data[i * m + j] = left[i][j] + right[i][j]);
         }
     }
 
@@ -286,16 +300,20 @@ QMatrix<T> operator+(const QMatrix<T>& left, const QMatrix<T>& right) {
 }
 
 template<typename T>
+SQUARE
 QMatrix<T> operator-(const QMatrix<T>& left, const QMatrix<T>& right) {
     if (left.GetN() != right.GetN() || left.GetM() != right.GetM()) {
         merror("Cannot subtract two matrices with different dimensions!", E_MAT_INVALID_DIMENSION);
         return left;
     }
 
+    uint64_t n = left.GetN();
+    uint64_t m = left.GetM();
+
     QMatrix<T> res = left;
-    for (size_t i = 0; i < left.GetN(); ++i) {
-        for (size_t j = 0; j < left.GetM(); ++j) {
-            DEREF_TRY(res.data[i * left.GetM() + j] = left[i][j] - right[i][j]);
+    for (size_t i = 0; i < n; ++i) {
+        for (size_t j = 0; j < m; ++j) {
+            DEREF_TRY(res.data[i * m + j] = left[i][j] - right[i][j]);
         }
     }
 
@@ -311,6 +329,7 @@ QMatrix<T> operator*(const QMatrix<T>& left, const QMatrix<T>& right) {
 
     uint64_t n = left.GetN();
     uint64_t m = right.GetM();
+    uint64_t p = left.GetM();
 
     T* _tmp_nums = nullptr;
     ALLOC_TRY(_tmp_nums = new T[SAFE_UINT(n * m)]);
@@ -322,8 +341,9 @@ QMatrix<T> operator*(const QMatrix<T>& left, const QMatrix<T>& right) {
     for (size_t i = 0; i < n; ++i) {
         for (size_t j = 0; j < m; ++j) {
             T part_sum = 0;
-            for (size_t k = 0; k < left.GetM(); ++i) {
-                DEREF_TRY(part_sum += left[i][k] * right[k][j]);
+            for (size_t k = 0; k < p; ++k) {
+                //DEREF_TRY(part_sum += left[i][k] * right[k][j]);
+                part_sum += left.data[i * m + j] * right.data[k * m + j];
             }
             res.data[SAFE_UINT(i * m + j)] = part_sum;
         }
@@ -335,9 +355,13 @@ QMatrix<T> operator*(const QMatrix<T>& left, const QMatrix<T>& right) {
 template<typename T>
 QMatrix<T> operator+(const QMatrix<T>& a, T scalar) {
     QMatrix<T> res = a;
-    for (size_t i = 0; i < a.GetN(); ++i) {
-        for (size_t j = 0; j < a.GetM(); ++j) {
-            DEREF_TRY(res.data[i * a.GetM() + j] += scalar);
+
+    uint64_t n = a.GetN();
+    uint64_t m = a.GetM();
+
+    for (size_t i = 0; i < n; ++i) {
+        for (size_t j = 0; j < m; ++j) {
+            DEREF_TRY(res.data[i * m + j] += scalar);
         }
     }
 
@@ -347,9 +371,13 @@ QMatrix<T> operator+(const QMatrix<T>& a, T scalar) {
 template<typename T>
 QMatrix<T> operator-(const QMatrix<T>& a, T scalar) {
     QMatrix<T> res = a;
-    for (size_t i = 0; i < a.GetN(); ++i) {
-        for (size_t j = 0; j < a.GetM(); ++j) {
-            DEREF_TRY(res.data[i * a.GetM() + j] -= scalar);
+
+    uint64_t n = a.GetN();
+    uint64_t m = a.GetM();
+
+    for (size_t i = 0; i < n; ++i) {
+        for (size_t j = 0; j < m; ++j) {
+            DEREF_TRY(res.data[i * m + j] -= scalar);
         }
     }
 
@@ -359,9 +387,13 @@ QMatrix<T> operator-(const QMatrix<T>& a, T scalar) {
 template<typename T>
 QMatrix<T> operator*(const QMatrix<T>& a, T scalar) {
     QMatrix<T> res = a;
-    for (size_t i = 0; i < a.GetN(); ++i) {
-        for (size_t j = 0; j < a.GetM(); ++j) {
-            DEREF_TRY(res.data[i * a.GetM() + j] *= scalar);
+
+    uint64_t n = a.GetN();
+    uint64_t m = a.GetM();
+
+    for (size_t i = 0; i < n; ++i) {
+        for (size_t j = 0; j < m; ++j) {
+            DEREF_TRY(res.data[i * m + j] *= scalar);
         }
     }
 
@@ -393,7 +425,7 @@ std::ostream& operator<<(std::ostream& os, const QMatrix<T>& mat) {
     os << n << " x " << m << " matrix\n";
     for (size_t i = 0; i < n; ++i) {
         for (size_t j = 0; j < m; ++j) {
-            os << mat.GetItem(i, j) << " ";
+            os << mat[i][j] << " ";
         }
         os << "\n";
     }
