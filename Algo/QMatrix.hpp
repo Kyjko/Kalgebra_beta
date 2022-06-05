@@ -26,7 +26,7 @@ public:
 	}
 	~_row() {}
 
-	U& operator[](size_t idx) {
+	U operator[](size_t idx) {
 		DEREF_TRY(return entries[idx]);
 	}
 
@@ -46,10 +46,10 @@ public:
 	uint64_t GetM() const noexcept;
 
 	double OpNorm(const QMatrix<T>& a) const noexcept;
-	double Det(const QMatrix<T>& a) const noexcept;
+	double Det() const noexcept;
 	
-	uint64_t Rank(const QMatrix<T>& a) const noexcept;
-	uint64_t Defect(const QMatrix<T>& a) const noexcept;
+	uint64_t Rank() const noexcept;
+	uint64_t Defect() const noexcept;
 	
 	bool IsLinearlyDep(const QMatrix<T>& a) const noexcept;
 	bool IsSquare() const noexcept;
@@ -58,7 +58,7 @@ public:
 	SQUARE std::array<QMatrix<T>, 3> DecomposeEigen(const QMatrix<T>& a) const;
 	SQUARE std::array<QMatrix<T>, 3> DecomposeSingularValue(const QMatrix<T>& a) const;
 	
-	_row<T>& operator[](uint64_t i) const;
+	_row<T> operator[](uint64_t i) const;
 	
 	QMatrix<T>& operator=(const QMatrix<T>& other);
 	QMatrix<T>& operator=(QMatrix<T>&& other) noexcept;
@@ -94,7 +94,7 @@ QMatrix<T>::QMatrix(const T* entries, uint64_t n, uint64_t m) : n(n), m(m) {
 template<typename T>
 QMatrix<T>::QMatrix(const QMatrix<T>& other) {
     if (n != other.n || m != other.m) {
-        delete[] data;
+        //delete[] data;
         ALLOC_TRY(data = new T[SAFE_UINT(other.GetN()) * SAFE_UINT(other.GetM())]);
     }
     n = other.n;
@@ -168,10 +168,10 @@ T QMatrix<T>::GetItem(uint64_t i, uint64_t j) const {
 }
 
 template<typename T>
-_row<T>& QMatrix<T>::operator[](uint64_t i) const {
+_row<T> QMatrix<T>::operator[](uint64_t i) const {
     T* _tmp_dat = nullptr;
     ALLOC_TRY(_tmp_dat = new T[m]);
-    memcpy(_tmp_dat, static_cast<T*>(data + SAFE_UINT(i * m)), SAFE_UINT(SAFE_UINT(m)*sizeof(T)));
+    memcpy(_tmp_dat, static_cast<T*>(data + i * SAFE_UINT(m)), SAFE_UINT(SAFE_UINT(m)*sizeof(T)));
   
     _row<T> r(_tmp_dat, m);
     _tmp_dat = nullptr;
@@ -212,15 +212,15 @@ bool operator>(const QMatrix<TT>& a, const QMatrix<TT> b) {
 
 template<typename T>
 SQUARE
-double QMatrix<T>::Det(const QMatrix<T>& a) const noexcept {
-    if (!a.IsSquare()) {
+double QMatrix<T>::Det() const noexcept {
+    if (!IsSquare()) {
         merror("Cannot calculate determinant of non-square matrix!", E_MAT_INVALID_DIMENSION);
         return static_cast<T>(0);
     }
 
     double detU = 1, detL = 1;
-    std::array<QMatrix<T>, 2> decomp = a.DecomposeLU();
-    for (size_t i = 0; i < a.GetN(); ++i) {
+    std::array<QMatrix<T>, 2> decomp = this->DecomposeLU();
+    for (size_t i = 0; i < GetN(); ++i) {
         DEREF_TRY(detL *= decomp[0][i][i]);
         DEREF_TRY(detU *= decomp[1][i][i]);
     }
@@ -257,10 +257,11 @@ std::array<QMatrix<T>, 2> QMatrix<T>::DecomposeLU() const {
             else {
                 l.data[j * n + i] = a[j][i];
                 for (k = 0; k < i; k++) {
-                    l.data[j * n + i] = l[j][i] - l[j][k] * u[k][i];
+                    l.data[i * n + j] = l[j][i] - l[j][k] * u[k][i];
                 }
             }
         }
+
         for (j = 0; j < n; j++) {
             if (j < i)
                 u.data[i * n + j] = 0;

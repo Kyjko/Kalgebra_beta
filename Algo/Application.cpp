@@ -66,15 +66,17 @@ int main(void) {
 
 #ifdef QMATRIX
 
-	int nums[] = { 1, 6, 7, 9, 10, 6, -5, 7, 9 };
+	int nums[] = { 1, 7, 6, 2, 1, 0, 3, 3, 1 };
 	QMatrix<int> mat(nums, 3, 3);
 
 	std::cout << mat;
 
-	std::cout << mat * mat;
+	//std::cout << mat * mat;
 
-	//auto LU = mat.DecomposeLU();
-	//std::cout << LU[0] << LU[1];
+	auto LU = mat.DecomposeLU();
+	std::cout << LU[0] << LU[1];
+
+	std::cout << mat.Det();
 
 #endif
 }
